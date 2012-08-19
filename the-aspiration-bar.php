@@ -86,7 +86,7 @@ define( 'TABAR_URL', plugins_url('/', __FILE__) );
 			
 		$time = current_time('mysql', $gmt = 0); 
 		
-		$aspiration_entry = strip_tags(htmlspecialchars($_POST['aspiration-entry']));
+		$aspiration_entry = wp_strip_all_tags($_POST['aspiration-entry']);
 		
 		$data = array(
 			'post_status' => 'publish',
