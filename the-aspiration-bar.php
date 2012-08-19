@@ -19,6 +19,35 @@ define( 'TABAR_ROOT', dirname(__FILE__) );
 define( 'TABAR_FILE_PATH', TABAR_ROOT . '/' . basename(__FILE__) );
 define( 'TABAR_URL', plugins_url('/', __FILE__) );
 
+	$wpver = get_bloginfo('version');
+	$floatWPVer = floatval($wpver);
+
+	//echo '<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>';
+	//Ref:WordPress Bible pg 90
+	
+	if ($floatWPVer >= 3.4){
+
+		function tabar_jq_setup() {
+				
+				wp_enqueue_script('jquery');
+				wp_enqueue_script('aspire-imp', TABAR_URL . 'includes/aspire-imp.js', array('jquery'));
+		}
+
+		add_action('wp_enqueue_scripts', 'tabar_jq_setup');
+	} else {
+
+		function tabar_jq_setup() {
+		
+						wp_dequeue_script( 'jquery' );
+						wp_deregister_script( 'jquery' );
+						wp_register_script('jquery', 'http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js', '', '');
+						wp_enqueue_script('jquery');
+						wp_enqueue_script('aspire-imp', TABAR_URL . 'includes/aspire-imp.js', array('jquery'));
+		}
+		add_action('wp_enqueue_scripts', 'tabar_jq_setup');
+	}
+
+
 	function create_tabar_post_type() {
 		$args = array(
 					'labels' => array(
@@ -31,8 +60,8 @@ define( 'TABAR_URL', plugins_url('/', __FILE__) );
 										'all_items' => __('All Aspirations'),
 										'view_item' => __('View Aspiration'),
 										'search_items' => __('Search Aspirations'),
-										'not_found' => __('No aspiration found'),
-										'not_found_in_trash' => __('No aspirations found in Trash')
+										'not_found' => __('No aspiration listed'),
+										'not_found_in_trash' => __('No aspirations listed in Trash')
 									),
 					'description' => 'Aspirations',
 					'public' => true,
@@ -49,6 +78,30 @@ define( 'TABAR_URL', plugins_url('/', __FILE__) );
 	}
 	
 	add_action('init', 'create_tabar_post_type' );
+	
+	function tabarAjaxery(){
+		// Verify nonce
+		if ( !wp_verify_nonce( $_POST['_nonce'], 'aspiration') )
+			die( __( "Nonce check failed. Please ensure you're supposed to be nominating stories.", 'aspiration' ) );
+			
+		$time = current_time('mysql', $gmt = 0); 
+		
+		$aspiration_entry = strip_tags(htmlspecialchars($_POST['aspiration-entry']));
+		
+		$data = array(
+			'post_status' => 'publish',
+			'post_type' => 'aspiration',
+			//'post_date' => $time,		
+			'post_title' => $aspiration_entry,//$item_title,
+			
+		);
+		print_r($data); die();
+		wp_insert_post( $data );
+		
+	}
+	
+		add_action( 'wp_ajax_nopriv_tabarAjaxery', 'tabarAjaxery' );
+		add_action( 'wp_ajax_tabarAjaxery', 'tabarAjaxery' );	
 
 class the_aspiration_bar extends WP_Widget {
 
@@ -79,7 +132,7 @@ class the_aspiration_bar extends WP_Widget {
 
 	// Using http://codex.wordpress.org/Template_Tags/wp_list_categories
 	// Going to need to construct these things manually check wp-includes/category-template.php ln 412 
-	// also http://codex.wordpress.org/Function_Reference/get_the_category and http://codex.wordpress.org/Function_Reference/get_category_link
+	// also http://codex.wordpress.org/Function_Reference/get_the_category and http://codex.wordpress.org/Function_Reference/get_category_link 
 			?>
 			
 			<div class="the-aspiration-bar">
